@@ -52,6 +52,8 @@ blogRouter.put("/", async (c) => {
   return c.json({ msg: "Blog Upfated" })
 })
 
+//ROUTE TO GET BLOG
+
 blogRouter.get("/", async (c) => {
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
@@ -72,6 +74,7 @@ blogRouter.get("/", async (c) => {
   }
 })
 
+//ROUTE TO GET ALL THE BLOGS
 blogRouter.get("/bulk", async (c) => {
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
