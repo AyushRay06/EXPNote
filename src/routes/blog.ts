@@ -10,20 +10,73 @@ export const blogRouter = new Hono<{
   }
 }>()
 
-blogRouter.get("/api/v1/blog/:id", (c) => {
-  const id = c.req.param("id")
-  console.log(id)
-  return c.text("get blog route")
+//ROUTE FOR CREATING A BLOG
+
+blogRouter.post("/", async (c) => {
+  const userId = c.get("userId")
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate())
+
+  const body = await c.req.json()
+  const blog = await prisma.post.create({
+    data: {
+      title: body.title,
+      content: body.content,
+      author: userId,
+    },
+  })
+  return c.json({
+    id: blog.id,
+  })
 })
 
-blogRouter.get("/api/v1/blog/", (c) => {
-  return c.text("get blog route")
+//ROUTE FOR CREATING A BLOG
+
+blogRouter.put("/", async (c) => {
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate())
+
+  const body = await c.req.json()
+  const blog = await prisma.post.update({
+    where: {
+      id: body.id,
+    },
+    data: {
+      title: body.title,
+      content: body.content,
+    },
+  })
+
+  return c.json({ msg: "Blog Upfated" })
 })
 
-blogRouter.post("/api/v1/blog", (c) => {
-  return c.text("signin route")
+blogRouter.get("/", async (c) => {
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate())
+  try {
+    const body = await c.req.json()
+    const blog = await prisma.post.findUnique({
+      where: {
+        id: body.id,
+      },
+    })
+    return c.json({ blog })
+  } catch (e) {
+    c.status(411)
+    return c.json({
+      msg: "Blog do not exist",
+    })
+  }
 })
 
-blogRouter.put("/api/v1/blog", (c) => {
-  return c.text("signin route")
+blogRouter.get("/bulk", async (c) => {
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate())
+
+  const blogs = await prisma.post.findMany()
+  return c.json({ blogs })
 })
