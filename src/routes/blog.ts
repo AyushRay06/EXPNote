@@ -1,5 +1,5 @@
 import { Hono } from "hono"
-import { PrismaClient } from "@prisma/client/edge"
+import { Prisma, PrismaClient } from "@prisma/client/edge"
 import { withAccelerate } from "@prisma/extension-accelerate"
 import { decode, sign, verify } from "hono/jwt"
 
@@ -8,7 +8,27 @@ export const blogRouter = new Hono<{
     DATABASE_URL: string
     JWT_SECRET: string
   }
+  Variables: {
+    userId: string
+  }
 }>()
+
+//MIDDLEWARE
+
+blogRouter.post("/*", async (c, next) => {
+  const authHeader = c.req.header("authorization") || ""
+  const user = await verify(authHeader, c.env.JWT_SECRET)
+  if (user) {
+    c.set("userId", user.id)
+    next()
+  } else {
+    c.status(403)
+    return c.json({
+      msg: "You are not logged in",
+    })
+  }
+  return c.json({ msg: "Auth Done" })
+})
 
 //ROUTE FOR CREATING A BLOG
 
@@ -23,7 +43,7 @@ blogRouter.post("/", async (c) => {
     data: {
       title: body.title,
       content: body.content,
-      author: userId,
+      authorId: userId,
     },
   })
   return c.json({
@@ -31,7 +51,7 @@ blogRouter.post("/", async (c) => {
   })
 })
 
-//ROUTE FOR CREATING A BLOG
+//ROUTE FOR UPDATING A BLOG
 
 blogRouter.put("/", async (c) => {
   const prisma = new PrismaClient({
@@ -75,6 +95,8 @@ blogRouter.get("/", async (c) => {
 })
 
 //ROUTE TO GET ALL THE BLOGS
+//sHOULD ADD PAGINATION
+
 blogRouter.get("/bulk", async (c) => {
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
